@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Merlin's Chronicle &mdash; Dashboard{% endblock %}
+{% block content %}
+
+<h1>MERLIN'S CHRONICLE</h1>
+<div class="subtitle">Albion Trading Desk &mdash; Reporting Dashboard (v{{ version }}) &mdash; {{ now }} UTC</div>
+
+{% set t = agg.totals %}
+<div class="card">
+  <h2 style="margin-top:0">Live Portfolio</h2>
+  <table class="kv">
+    <tr><td>Starting Balance</td><td>&pound;{{ '{:,.2f}'.format(t.starting_balance) }}</td></tr>
+    <tr><td>Closing Balance</td><td class="big">&pound;{{ '{:,.2f}'.format(t.closing_balance) }}</td></tr>
+    <tr><td>Net P&amp;L</td>
+        <td class="{{ 'win' if t.net_change >= 0 else 'loss' }}">
+          {{ '-' if t.net_change < 0 else '' }}&pound;{{ '{:,.2f}'.format(t.net_change|abs) }}
+          ({{ '{:.1f}'.format(t.net_change_pct) }}%)
+        </td></tr>
+    <tr><td>Total Trades (all-time)</td><td>{{ t.trades }}</td></tr>
+    <tr><td>Overall Win Rate</td><td>{{ '{:.1f}'.format(t.win_rate) }}%</td></tr>
+    <tr><td>Phantom Decisions</td><td>{{ t.phantom_decisions }}</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">System Balances</h2>
+  <table class="grid">
+    <thead><tr><th>System</th><th>Asset</th><th>Start</th><th>Current</th><th>P&amp;L</th><th>Trades</th></tr></thead>
+    <tbody>
+    {% for key, s in agg.systems.items() %}
+      <tr>
+        <td><span class="dot" style="background:{{ s.color }}"></span>{{ s.display }}</td>
+        <td class="muted">{{ s.label }}</td>
+        <td>&pound;{{ '{:,.2f}'.format(s.start_balance) }}</td>
+        <td>&pound;{{ '{:,.2f}'.format(s.current_balance) }}</td>
+        {% set d = s.current_balance - s.start_balance %}
+        <td class="{{ 'win' if d >= 0 else 'loss' }}">{{ '-' if d < 0 else '' }}&pound;{{ '{:,.2f}'.format(d|abs) }}</td>
+        <td>{{ s.n_trades }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Generate Report</h2>
+  <div class="quick-btns">
+    <a href="/report/daily">Today</a>
+    <a href="/report/weekly">This Week</a>
+    <a href="/report/monthly">This Month</a>
+  </div>
+  <form action="/report/custom" method="get" style="margin-top:12px">
+    <label>From <input type="date" name="from"></label>
+    <label style="margin-left:10px">To <input type="date" name="to"></label>
+    <button class="btn" type="submit" style="border:none;cursor:pointer">Custom Report</button>
+  </form>
+  <p class="note">Print any open report with the &#128424;&#65039; Print button (or use /print/&lt;type&gt; for auto-print).</p>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Last 3 Saved Reports</h2>
+  {% if saved %}
+    <ul>
+    {% for f in saved %}
+      <li><a href="/report/saved/{{ f }}">{{ f }}</a></li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No saved reports yet. They will appear here once generated or scheduled.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Scheduled Reports (UTC)</h2>
+  <ul>
+  {% for s in scheduled %}<li>{{ s }}</li>{% endfor %}
+  </ul>
+  <p class="note">Last report generated: {{ last_report or 'none yet' }}</p>
+</div>
+
+<footer class="chronicle-footer">
+  <hr/>
+  <p>Merlin's Chronicle v{{ version }} &mdash; <strong>Paper Trading Mode</strong> &mdash; All times UTC.</p>
+  <p class="desk">Albion Trading Desk</p>
+</footer>
+
+{% endblock %}

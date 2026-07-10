@@ -1,0 +1,187 @@
+/* ==========================================================================
+   Merlin's Chronicle -- chronicle.css
+   Theme: Deep Purple #4B0082
+   ========================================================================== */
+
+:root {
+  --purple: #4B0082;
+  --purple-light: #6a1fb0;
+  --bg: #1a1a2e;
+  --bg-alt: #23233f;
+  --text: #ffffff;
+  --muted: #9a9ab5;
+  --win: #00ff00;
+  --loss: #ff4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+a { color: #b98bff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.report-container, .dash-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* ---- headers ---- */
+h1 {
+  color: #fff;
+  background: linear-gradient(90deg, var(--purple), var(--purple-light));
+  padding: 16px 20px;
+  margin: 0 0 6px;
+  border-radius: 8px;
+  letter-spacing: 2px;
+  font-size: 28px;
+}
+h2 {
+  color: #fff;
+  background: var(--purple);
+  padding: 8px 14px;
+  margin: 26px 0 10px;
+  border-left: 6px solid var(--purple-light);
+  border-radius: 4px;
+  font-size: 19px;
+}
+.subtitle { color: var(--muted); margin-bottom: 10px; }
+
+.section { margin-bottom: 18px; }
+.note { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.muted { color: var(--muted); }
+code { background: #2c2c4a; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+/* ---- tables ---- */
+table { border-collapse: collapse; width: 100%; margin: 6px 0; }
+table.meta, table.kv { max-width: 640px; }
+th, td {
+  padding: 7px 10px;
+  text-align: left;
+  border-bottom: 1px solid #33334f;
+}
+thead th {
+  background: var(--purple);
+  color: #fff;
+  border-bottom: 2px solid var(--purple-light);
+}
+table.grid tbody tr:nth-child(even) { background: var(--bg-alt); }
+table.kv td:first-child, table.meta td:first-child { color: var(--muted); width: 55%; }
+.total-row { font-weight: bold; background: #2f2150 !important; }
+.total-row td { border-top: 2px solid var(--purple-light); }
+
+.dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:7px; vertical-align:middle; border:1px solid #000; }
+
+/* ---- P&L colours ---- */
+.win { color: var(--win); font-weight: 600; }
+.loss { color: var(--loss); font-weight: 600; }
+.result { text-align: center; }
+.v-correct { color: var(--win); font-weight: 600; }
+.v-wrong { color: var(--loss); font-weight: 600; }
+.v-neutral { color: var(--muted); }
+.v-pending { color: #ffcc55; }
+
+/* ---- print button ---- */
+.print-btn {
+  background: var(--purple);
+  color: #fff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  float: right;
+  margin-bottom: 8px;
+}
+.print-btn:hover { background: var(--purple-light); }
+
+/* ---- dashboard ---- */
+.card {
+  background: var(--bg-alt);
+  border: 1px solid #33334f;
+  border-left: 5px solid var(--purple-light);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin: 14px 0;
+}
+.quick-btns a, .btn {
+  display: inline-block;
+  background: var(--purple);
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: 6px;
+  margin: 4px 6px 4px 0;
+}
+.quick-btns a:hover, .btn:hover { background: var(--purple-light); text-decoration: none; }
+.big { font-size: 30px; font-weight: bold; }
+input[type="date"] {
+  background: #2c2c4a; color:#fff; border:1px solid #44446a; border-radius:5px; padding:6px 8px;
+}
+.chronicle-footer .desk { color: var(--purple-light); font-weight: bold; letter-spacing:1px; }
+hr { border: none; border-top: 1px solid #33334f; margin: 18px 0; }
+
+/* ==========================================================================
+   PRINT
+   ========================================================================== */
+@media print {
+  @page { size: A4; margin: 1.5cm; }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+  }
+  .report-container { max-width: none; padding: 0; }
+  .no-print, .print-btn, .quick-btns, input, .dash-only { display: none !important; }
+
+  h1 {
+    background: none !important;
+    color: #000 !important;
+    border-bottom: 3px solid #000;
+    border-radius: 0;
+    padding: 0 0 6px;
+    font-size: 20pt;
+  }
+  h2 {
+    background: none !important;
+    color: #000 !important;
+    border: none;
+    border-bottom: 1.5px solid #000;
+    border-left: none;
+    border-radius: 0;
+    padding: 4px 0;
+    font-size: 13pt;
+    page-break-after: avoid;   /* header stays with first row */
+  }
+  a { color: #000; text-decoration: none; }
+  code { background: none; }
+
+  table { width: 100%; border: 1px solid #000; }
+  th, td { border: 1px solid #000; padding: 3px 5px; color: #000 !important; }
+  thead th { background: #ddd !important; color:#000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  table.grid tbody tr:nth-child(even) { background: #f2f2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .total-row { background: #e4e4e4 !important; }
+
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  .section { page-break-before: auto; }
+  h2 { page-break-before: always; }
+  .chronicle-header h2, header h2 { page-break-before: auto; }
+
+  /* WIN bold black, LOSS bold black + (L) marker */
+  .win, .v-correct { color: #000 !important; font-weight: bold; }
+  .loss, .v-wrong { color: #000 !important; font-weight: bold; }
+  td.loss.result::after, td.result.loss::after { content: " (L)"; }
+
+  .chronicle-footer { page-break-before: avoid; }
+  .chronicle-footer::after { content: "Albion Trading Desk"; display:block; margin-top:6px; font-weight:bold; }
+}

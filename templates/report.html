@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Merlin's Chronicle &mdash; Report{% endblock %}
+{% block content %}
+{# Reports are normally produced as fully self-contained HTML by chronicle.generate_report(). #}
+{# This template is a thin fallback wrapper for rendering report_html inline. #}
+<button class="print-btn no-print" onclick="window.print()">&#128424;&#65039; Print</button>
+{{ report_html|safe }}
+{% endblock %}
