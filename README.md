@@ -1,6 +1,6 @@
 # Merlin's Chronicle
 
-**Version 1.0.0 · Port 5011 · Deep Purple #4B0082 · All times UTC · Paper Trading Mode**
+**Version 1.1.0 · Port 5011 · Deep Purple #4B0082 · All times UTC · Paper Trading Mode**
 
 Merlin's Chronicle is a standalone, **READ-ONLY** Flask reporting app for the
 **Albion Trading Desk**. It reads the logs and trade CSVs of all six trading
@@ -49,7 +49,28 @@ The app binds `0.0.0.0:5011` and starts the report scheduler in a daemon thread.
 | `GET /report/saved/<filename>` | View a saved report (path-traversal guarded) |
 | `GET /print/<report_type>` | Print view with auto `window.print()` |
 | `POST /generate` | Generate + save a report to `reports/`, returns filename |
+| `GET /api/archie` | Plain-text Archie report (last 7 days), paste-able into Claude |
 | `GET /api/status` | JSON status |
+
+## Archie Report
+
+Merlin's Chronicle can emit a compact, **plain-text** portfolio report designed
+to be pasted straight into Claude for **Archie** to review — no screenshots
+needed.
+
+- Visit **`http://localhost:5011/api/archie`** to view the raw text, or
+- Click **[📋 Copy Archie Report]** on the dashboard home page. It fetches
+  `/api/archie`, copies the text to your clipboard (with a fallback for
+  non-secure / localhost contexts), and shows a transient
+  *"Copied! Paste to Archie in Claude."* confirmation.
+
+Then paste the text into Claude and ask Archie for a review. The report covers a
+header (title / generated UTC / 7-day period), portfolio overview
+(starting/current/net P&L + %, trades, win rate, best/worst day), a per-system
+performance table, Arthur stay-out performance (CORRECT/WRONG/NEUTRAL + net
+benefit), the top ~5 phantom decisions by 1hr move, latest **Morgan confidence**
+per system (with the period's confidence journey), average **Guinevere
+sentiment** score (Oil/Gas news module), and an alerts/anomalies section.
 
 ## Scheduled reports (UTC)
 
@@ -87,7 +108,9 @@ Each system's `logs/` directory is read read-only:
 
 - `*_trades.csv` — realised trades (schemas differ per system; the reader is tolerant)
 - `phantom_trades.csv` — uniform stay-out / block decision log
-- `*.log` — best-effort scan for Morgan confidence reconstruction
+- `morgan_confidence.csv` — persisted Morgan confidence history (timestamp, confidence, level, reason); all six systems
+- `guinevere_sentiment.csv` — persisted Guinevere news sentiment (timestamp, sentiment, score, headlines, eia_window); Oil & Gas only
+- `*.log` — legacy best-effort scan (superseded by the CSVs above)
 
 ### Known data gaps (at v1.0.0)
 

@@ -281,73 +281,133 @@ def read_phantom_decisions(system_key, date_from=None, date_to=None):
 
 
 # ---------------------------------------------------------------------------
+# _level_for_confidence
+# ---------------------------------------------------------------------------
+def _level_for_confidence(conf):
+    """Bucket a numeric confidence (0-100) into a level word, used only when
+    the CSV row itself does not carry an explicit level."""
+    try:
+        c = float(conf)
+    except (TypeError, ValueError):
+        return "MEDIUM"
+    if c >= 65:
+        return "HIGH"
+    if c < 40:
+        return "LOW"
+    return "MEDIUM"
+
+
+# ---------------------------------------------------------------------------
 # read_morgan_confidence
 # ---------------------------------------------------------------------------
 def read_morgan_confidence(system_key, date_from=None, date_to=None):
-    """Best-effort reconstruction of Morgan confidence events.
+    """Read a system's logs/morgan_confidence.csv.
 
-    No persistent morgan_*.json history files exist, so we scan the system's
-    main *.log for lines mentioning Morgan confidence / STAY OUT quality and
-    extract any numeric confidence value + level word. If nothing usable is
-    found, returns []. (Note: in the current data these are essentially all
-    baseline MEDIUM (50) mentions -- no real adjustment events are logged.)
+    Expected columns: timestamp, confidence, level, reason.
+
+    Returns a list of dicts (in chronological order, filtered to the date
+    range) shaped as:
+        {timestamp, confidence(float), level, value(int), reason}
+    (``value`` is retained for backward compatibility with the report
+    generator, which renders "<level> (<value>)".)
+
+    A missing / empty / header-only / locked / malformed file yields ``[]`` --
+    this reader NEVER raises.
     """
     if system_key not in SYSTEMS:
         return []
 
-    logs_dir = _logs_dir(system_key)
-    if not os.path.isdir(logs_dir):
+    path = _safe_path(system_key, "morgan_confidence.csv")
+    if not path or not os.path.exists(path):
         return []
 
-    # find the main log (largest *.log that is not a watchdog log)
-    main_log = None
+    out = []
     try:
-        candidates = [
-            os.path.join(logs_dir, f)
-            for f in os.listdir(logs_dir)
-            if f.endswith(".log") and "watchdog" not in f.lower()
-        ]
-        if candidates:
-            main_log = max(candidates, key=lambda p: os.path.getsize(p))
-    except OSError:
-        return []
-
-    if not main_log:
-        return []
-
-    import re
-    events = []
-    # e.g. "Morgan confidence at MEDIUM (50)" / "Morgan confidence MEDIUM (50)"
-    pat = re.compile(
-        r"Morgan confidence[^\d(]*?(?:(HIGH|MEDIUM|LOW)\s*)?\((\d{1,3})\)",
-        re.IGNORECASE,
-    )
-    lvl_pat = re.compile(r"(HIGH|MEDIUM|LOW)", re.IGNORECASE)
-    try:
-        with open(main_log, "r", encoding="utf-8", errors="ignore") as fh:
-            for line in fh:
-                if "Morgan confidence" not in line and "STAY OUT quality" not in line:
+        with open(path, "r", newline="", encoding="utf-8-sig") as fh:
+            reader = csv.DictReader(fh)
+            for row in reader:
+                if not row:
                     continue
-                m = pat.search(line)
-                if not m:
+                ts = _fstr(row, "timestamp")
+                d = _to_date(ts)
+                if (date_from is not None or date_to is not None) and \
+                        not _in_range(d, date_from, date_to):
                     continue
-                level = (m.group(1) or "").upper()
-                if not level:
-                    lm = lvl_pat.search(line)
-                    level = lm.group(1).upper() if lm else "MEDIUM"
-                try:
-                    value = int(m.group(2))
-                except (TypeError, ValueError):
+                conf = _fnum(row, "confidence")
+                if conf is None:
                     continue
-                events.append({
+                level = _fstr(row, "level").upper() or _level_for_confidence(conf)
+                out.append({
                     "system": system_key,
+                    "timestamp": ts,
+                    "confidence": conf,
+                    "value": int(round(conf)),
                     "level": level,
-                    "value": value,
-                    "line": line.strip()[:200],
+                    "reason": _fstr(row, "reason"),
+                    "_date": d,
                 })
-    except OSError:
+    except (OSError, csv.Error, UnicodeDecodeError, ValueError):
         return []
-    return events
+
+    out.sort(key=lambda e: e.get("timestamp", ""))
+    return out
+
+
+def latest_morgan_confidence(system_key):
+    """Convenience: the most recent Morgan reading (all-time) as a
+    ``(confidence, level)`` tuple, or ``(None, None)`` if none exists."""
+    events = read_morgan_confidence(system_key)
+    if not events:
+        return (None, None)
+    last = events[-1]
+    return (last.get("confidence"), last.get("level"))
+
+
+# ---------------------------------------------------------------------------
+# read_guinevere_sentiment
+# ---------------------------------------------------------------------------
+def read_guinevere_sentiment(system_key, date_from=None, date_to=None):
+    """Read a system's logs/guinevere_sentiment.csv (only Oil & Gas run the
+    Guinevere news module).
+
+    Expected columns: timestamp, sentiment, score, headline_1..3, eia_window.
+
+    Returns a list of dicts (chronological, date-filtered):
+        {timestamp, sentiment, score(int or None)}
+    Empty list if absent / unreadable -- NEVER raises.
+    """
+    if system_key not in SYSTEMS:
+        return []
+
+    path = _safe_path(system_key, "guinevere_sentiment.csv")
+    if not path or not os.path.exists(path):
+        return []
+
+    out = []
+    try:
+        with open(path, "r", newline="", encoding="utf-8-sig") as fh:
+            reader = csv.DictReader(fh)
+            for row in reader:
+                if not row:
+                    continue
+                ts = _fstr(row, "timestamp")
+                d = _to_date(ts)
+                if (date_from is not None or date_to is not None) and \
+                        not _in_range(d, date_from, date_to):
+                    continue
+                sc = _fnum(row, "score")
+                out.append({
+                    "system": system_key,
+                    "timestamp": ts,
+                    "sentiment": _fstr(row, "sentiment"),
+                    "score": int(round(sc)) if sc is not None else None,
+                    "_date": d,
+                })
+    except (OSError, csv.Error, UnicodeDecodeError, ValueError):
+        return []
+
+    out.sort(key=lambda e: e.get("timestamp", ""))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -393,7 +453,35 @@ def aggregate_all_systems(date_from=None, date_to=None):
     for key in SYSTEMS:
         trades = read_trades(key, date_from, date_to)
         phantoms = read_phantom_decisions(key, date_from, date_to)
-        morgan = read_morgan_confidence(key, date_from, date_to)
+
+        # New persistence readers -- wrapped so a bad CSV never breaks aggregation.
+        try:
+            morgan = read_morgan_confidence(key, date_from, date_to)
+        except Exception:
+            morgan = []
+        try:
+            guinevere = read_guinevere_sentiment(key, date_from, date_to)
+        except Exception:
+            guinevere = []
+        try:
+            latest_conf, latest_level = latest_morgan_confidence(key)
+        except Exception:
+            latest_conf, latest_level = (None, None)
+
+        # Confidence journey: first -> last confidence within the period.
+        if morgan:
+            morgan_journey = {
+                "first": morgan[0]["confidence"],
+                "first_level": morgan[0]["level"],
+                "last": morgan[-1]["confidence"],
+                "last_level": morgan[-1]["level"],
+            }
+        else:
+            morgan_journey = None
+
+        # Average Guinevere sentiment score (None if no news module / no data).
+        _g_scores = [g["score"] for g in guinevere if g.get("score") is not None]
+        guin_avg = (sum(_g_scores) / len(_g_scores)) if _g_scores else None
 
         wins = sum(1 for t in trades if t["result"] == "WIN")
         losses = sum(1 for t in trades if t["result"] == "LOSS")
@@ -427,6 +515,12 @@ def aggregate_all_systems(date_from=None, date_to=None):
             "trades": trades,
             "phantoms": phantoms,
             "morgan": morgan,
+            "guinevere": guinevere,
+            "morgan_latest_confidence": latest_conf,
+            "morgan_latest_level": latest_level,
+            "morgan_confidence_journey": morgan_journey,
+            "guinevere_avg_score": guin_avg,
+            "guinevere_days": len(guinevere),
             "n_trades": n,
             "wins": wins,
             "losses": losses,

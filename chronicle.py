@@ -14,7 +14,7 @@ from html import escape
 import data_reader
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 NEXT_SCHEDULED = "Daily 21:00 UTC / Weekly Sun 20:00 UTC / Monthly last-Fri 20:00 UTC"
 
 
