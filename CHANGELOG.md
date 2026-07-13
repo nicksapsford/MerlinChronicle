@@ -2,6 +2,15 @@
 
 All notable changes to Merlin's Chronicle are documented here.
 
+## [1.2.0] - 2026-07-13
+### Added
+- Custom lookback report (1-6 day rolling UTC window: 00:00 N days ago -> now), filling the gap below the 7-day weekly report.
+- Dashboard "Custom Lookback Report" card: six buttons ("Last 1 day" ... "Last 6 days"). Clicking renders the Chronicle-view report (Format 1, same styling as weekly) inline in an iframe and reveals a "Copy Archie Report" button that copies the Archie plain-text version (Format 2) for the selected period to the clipboard.
+- New route `/report/lookback?days=N` (1-6) -> Format 1 HTML.
+- `/api/archie` now accepts optional `?days=N` (1-6) -> Format 2 text for that lookback. Default (no param) remains last 7 days, unchanged.
+### Changed
+- chronicle.VERSION aligned to the VERSION file (1.2.0); the "(last N days)" label in the Archie report is now parameterised.
+
 ## [1.1.1] - 2026-07-11
 ### Added
 - Silent launcher (pythonw -- no console windows); output to logs/console.log with daily rotation (7 days kept)

@@ -34,6 +34,17 @@ def _now():
     return datetime.now(timezone.utc)
 
 
+def _clamp_days(raw, default=7, lo=1, hi=6):
+    """Parse a ?days= value -> int in [lo, hi], else `default`.
+    Used by the custom lookback report (1-6) and /api/archie (default 7).
+    'Last N days' is a rolling UTC window: 00:00 N days ago -> now."""
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return default
+    return n if lo <= n <= hi else default
+
+
 def _period(report_type, frm=None, to=None):
     today = _now().date()
     if report_type == "daily":
@@ -113,6 +124,21 @@ def report_custom():
     return _render_report("custom", frm, to)
 
 
+@app.route("/report/lookback")
+def report_lookback():
+    """Custom rolling-window report (Format 1 -- same styling as the weekly
+    report) for a 1-6 day lookback. Window is UTC: 00:00 N days ago -> now,
+    mirroring /api/archie?days=N so both formats cover the identical period."""
+    days = _clamp_days(request.args.get("days"), default=6)
+    now = _now()
+    date_from = (now - timedelta(days=days)).date()
+    date_to = now.date()
+    label = "Last {} day{}".format(days, "" if days == 1 else "s")
+    html = chronicle.generate_report(date_from, date_to, report_type=label,
+                                     auto_print=(request.args.get("print") == "1"))
+    return Response(html, mimetype="text/html")
+
+
 @app.route("/print/<report_type>")
 def print_report(report_type):
     if report_type not in _VALID_TYPES:
@@ -171,7 +197,7 @@ def _signed(v):
     return ("-" if f < 0 else "+") + "{:,.2f}".format(abs(f))
 
 
-def _build_archie_report(agg, now, date_from, date_to):
+def _build_archie_report(agg, now, date_from, date_to, days=7):
     """Build the structured plain-text Archie report from the aggregate.
 
     Every value is mapped to what aggregate_all_systems() actually returns;
@@ -190,8 +216,8 @@ def _build_archie_report(agg, now, date_from, date_to):
     w("MERLIN'S CHRONICLE  --  ARCHIE REPORT")
     w("Albion Trading Desk (6 systems)  --  Paper Trading Mode")
     w("Generated: {} UTC".format(now.strftime("%Y-%m-%d %H:%M:%S")))
-    w("Period:    {}  ->  {}   (last 7 days)".format(
-        date_from.isoformat(), date_to.isoformat()))
+    w("Period:    {}  ->  {}   (last {} day{})".format(
+        date_from.isoformat(), date_to.isoformat(), days, "" if days == 1 else "s"))
     w("=" * 64)
     w("")
 
@@ -319,10 +345,12 @@ def _build_archie_report(agg, now, date_from, date_to):
 def api_archie():
     try:
         now = _now()
-        date_from = (now - timedelta(days=7)).date()
+        # Optional ?days=N (1-6) for a custom lookback; default 7 (unchanged).
+        days = _clamp_days(request.args.get("days"), default=7)
+        date_from = (now - timedelta(days=days)).date()
         date_to = now.date()
         agg = data_reader.aggregate_all_systems(date_from=date_from, date_to=date_to)
-        text = _build_archie_report(agg, now, date_from, date_to)
+        text = _build_archie_report(agg, now, date_from, date_to, days=days)
         return Response(text, content_type="text/plain; charset=utf-8")
     except Exception as exc:  # never 500 -- return a readable error string
         import traceback

@@ -58,6 +58,71 @@
 </div>
 
 <div class="card">
+  <h2 style="margin-top:0">Custom Lookback Report</h2>
+  <p class="muted">On-demand report for a rolling 1&ndash;6 day window (fills the gap below the 7-day weekly report).
+    Windows are UTC: from 00:00 N&nbsp;days ago to now. Click a period &mdash; it renders below in Chronicle view,
+    with a button to copy the Archie plain-text version for Claude.</p>
+  <div class="quick-btns" id="lookbackBtns">
+    <a href="#" data-days="1" onclick="loadLookback(1);return false;">Last 1 day</a>
+    <a href="#" data-days="2" onclick="loadLookback(2);return false;">Last 2 days</a>
+    <a href="#" data-days="3" onclick="loadLookback(3);return false;">Last 3 days</a>
+    <a href="#" data-days="4" onclick="loadLookback(4);return false;">Last 4 days</a>
+    <a href="#" data-days="5" onclick="loadLookback(5);return false;">Last 5 days</a>
+    <a href="#" data-days="6" onclick="loadLookback(6);return false;">Last 6 days</a>
+  </div>
+  <div id="lookbackActions" style="margin-top:12px; display:none">
+    <button class="btn" type="button" onclick="copyLookbackArchie()" style="border:none;cursor:pointer">&#128203; Copy Archie Report</button>
+    <a class="btn" id="lookbackOpen" href="#" target="_blank" rel="noopener" style="margin-left:4px">&#128279; Open in new tab</a>
+    <span id="lookbackMsg" class="note" style="margin-left:12px"></span>
+  </div>
+  <iframe id="lookbackFrame" title="Custom lookback report"
+          style="display:none; width:100%; height:900px; border:1px solid #33334f; border-radius:8px; margin-top:12px; background:#fff"></iframe>
+</div>
+<style>#lookbackBtns a.active{ background: var(--purple-light); box-shadow: 0 0 0 2px #fff inset; }</style>
+<script>
+var _lookbackDays = null;
+function loadLookback(n) {
+  _lookbackDays = n;
+  var url = '/report/lookback?days=' + n;
+  var frame = document.getElementById('lookbackFrame');
+  frame.src = url;
+  frame.style.display = 'block';
+  document.getElementById('lookbackActions').style.display = 'block';
+  document.getElementById('lookbackOpen').href = url;
+  document.getElementById('lookbackMsg').textContent =
+    'Showing last ' + n + ' day' + (n === 1 ? '' : 's') + ' (Chronicle view).';
+  var links = document.querySelectorAll('#lookbackBtns a');
+  for (var i = 0; i < links.length; i++) {
+    links[i].classList.toggle('active', links[i].getAttribute('data-days') === String(n));
+  }
+}
+function copyLookbackArchie() {
+  if (!_lookbackDays) { return; }
+  var msg = document.getElementById('lookbackMsg');
+  msg.textContent = 'Fetching…';
+  fetch('/api/archie?days=' + _lookbackDays).then(function (r) { return r.text(); }).then(function (text) {
+    function done() {
+      msg.textContent = 'Copied last ' + _lookbackDays + '-day Archie report! Paste to Archie in Claude.';
+      setTimeout(function () { msg.textContent = ''; }, 4000);
+    }
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta); done();
+      } catch (e) {
+        msg.textContent = 'Copy failed — open /api/archie?days=' + _lookbackDays + ' and copy manually.';
+      }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else { fallback(); }
+  }).catch(function () { msg.textContent = 'Fetch failed — is the app running?'; });
+}
+</script>
+
+<div class="card">
   <h2 style="margin-top:0">Archie Report</h2>
   <p class="muted">Copy a plain-text portfolio report (last 7 days) to paste into Claude for Archie &mdash; no screenshots needed.</p>
   <button class="btn" type="button" id="copyArchieBtn" onclick="copyArchieReport()" style="border:none;cursor:pointer">&#128203; Copy Archie Report</button>
