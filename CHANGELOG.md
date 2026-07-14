@@ -2,6 +2,14 @@
 
 All notable changes to Merlin's Chronicle are documented here.
 
+## [1.2.2] - 2026-07-14
+### Fixed
+- Morgan confidence showed "no confidence data" for OilTrader and GasTrader (they
+  have not written a morgan_confidence.csv history yet). latest_morgan_confidence()
+  now falls back to the persisted morgan_confidence.json, then the 50/MEDIUM
+  baseline -- so all 6 systems report a confidence value (Oil/Gas show their 50
+  baseline). Added the missing `import json`.
+
 ## [1.2.1] - 2026-07-14
 ### Fixed
 - Guinevere Summary (Section 8) now reports real per-fetch sentiment readings and

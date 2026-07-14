@@ -13,6 +13,7 @@ All times are treated as UTC.
 
 import os
 import csv
+import json
 from datetime import datetime, date
 
 # ---------------------------------------------------------------------------
@@ -355,12 +356,25 @@ def read_morgan_confidence(system_key, date_from=None, date_to=None):
 
 def latest_morgan_confidence(system_key):
     """Convenience: the most recent Morgan reading (all-time) as a
-    ``(confidence, level)`` tuple, or ``(None, None)`` if none exists."""
+    ``(confidence, level)`` tuple. Falls back to the persisted
+    morgan_confidence.json, then the 50/MEDIUM baseline -- so systems that have
+    not yet written a CSV history (e.g. Oil/Gas) report their baseline rather
+    than 'no confidence data'."""
     events = read_morgan_confidence(system_key)
-    if not events:
-        return (None, None)
-    last = events[-1]
-    return (last.get("confidence"), last.get("level"))
+    if events:
+        last = events[-1]
+        return (last.get("confidence"), last.get("level"))
+    # Fallback 1: persisted JSON (Morgan's current value even with no CSV history).
+    p = _safe_path(system_key, "morgan_confidence.json")
+    try:
+        with open(p, "r", encoding="utf-8") as fh:
+            v = float(json.load(fh).get("confidence"))
+        lvl = "HIGH" if v >= 65 else ("LOW" if v <= 35 else "MEDIUM")
+        return (v, lvl)
+    except Exception:
+        pass
+    # Fallback 2: Morgan starts at 50 (MEDIUM) -- the neutral baseline.
+    return (50.0, "MEDIUM")
 
 
 # ---------------------------------------------------------------------------
