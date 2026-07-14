@@ -2,6 +2,13 @@
 
 All notable changes to Merlin's Chronicle are documented here.
 
+## [1.2.1] - 2026-07-14
+### Fixed
+- Guinevere Summary (Section 8) now reports real per-fetch sentiment readings and
+  average score from guinevere_sentiment.csv (data_reader already computed these;
+  the section was stale placeholder text) and now includes GoldTrader alongside
+  Oil and Gas.
+
 ## [1.2.0] - 2026-07-13
 ### Added
 - Custom lookback report (1-6 day rolling UTC window: 00:00 N days ago -> now), filling the gap below the 7-day weekly report.

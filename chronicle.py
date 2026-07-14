@@ -279,24 +279,33 @@ def _sec8_morgan(agg):
 
 
 def _sec9_guinevere(agg):
-    # Best-effort: no structured sentiment/score history is logged for Oil/Gas.
+    # Real readings from each system's guinevere_sentiment.csv (Oil, Gas, Gold
+    # run the news module). data_reader computes avg score + reading count.
     def summarise(key):
         s = agg["systems"][key]
-        # We do not have a structured sentiment reader; report the data gap.
-        return f"<tr><td>{escape(s['display'])}</td><td class='muted'>no sentiment history logged</td><td class='muted'>-</td></tr>"
+        days = s.get("guinevere_days", 0) or 0
+        avg = s.get("guinevere_avg_score")
+        if not days:
+            return (f"<tr><td>{escape(s['display'])}</td>"
+                    f"<td class='muted'>no readings in period</td><td class='muted'>-</td></tr>")
+        avg_txt = f"{avg:+.2f}" if avg is not None else "-"
+        return (f"<tr><td>{escape(s['display'])}</td>"
+                f"<td>{days}</td><td>{avg_txt}</td></tr>")
 
     return f"""
 <section class="section">
   <h2>8. Guinevere Summary (News Sentiment)</h2>
   <table class="grid">
-    <thead><tr><th>System</th><th>Sentiment Days</th><th>Avg Score</th></tr></thead>
+    <thead><tr><th>System</th><th>Sentiment Readings</th><th>Avg Score</th></tr></thead>
     <tbody>
       {summarise('oil')}
       {summarise('gas')}
+      {summarise('gold')}
     </tbody>
   </table>
-  <p class="note">No structured Guinevere sentiment/score history is persisted for Oil or Gas
-  (news_sentiment / news_score trade columns are empty and no sentiment scores are logged). Reported as a data gap rather than inventing numbers.</p>
+  <p class="note">Guinevere news-sentiment readings are logged to each system's
+  logs/guinevere_sentiment.csv (Oil, Gas and Gold run the news module). Avg Score is the mean
+  per-fetch sentiment score over the period; positive = net bullish for that market.</p>
 </section>
 """
 
