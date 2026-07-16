@@ -388,6 +388,24 @@ def api_status():
     })
 
 
+@app.route("/api/shutdown", methods=["POST"])
+def api_shutdown():
+    """Graceful shutdown from RoundTable maintenance mode. Mirrors the traders'
+    /api/shutdown so the Chronicle window closes cleanly and does not become a
+    duplicate process when START ALL relaunches it."""
+    import signal
+    import threading
+    import time
+    print("Merlin's Chronicle: shutdown requested via /api/shutdown -- exiting")
+
+    def _kill():
+        time.sleep(0.5)
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    threading.Thread(target=_kill, daemon=True).start()
+    return jsonify({"status": "shutting_down"})
+
+
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
