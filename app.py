@@ -266,6 +266,20 @@ def _build_archie_report(agg, now, date_from, date_to, days=7):
     w("Net Arthur benefit          : GBP {}".format(_signed(net_benefit)))
     w("")
 
+    # --- FTSETrader contrarian phantom log (Job 2) -------------------------
+    # The opposite-direction (LONG) mirror of FTSETrader's blocked SHORTs -- an
+    # evidence base for whether fading the signal beats following it. Data
+    # collection only; no change to live trading.
+    cs = data_reader.read_contrarian_summary("ftse")
+    if cs.get("decisions", 0) > 0:
+        w("CONTRARIAN PHANTOM LOG (FTSETrader -- LONG mirror of blocked SHORTs)")
+        w("-" * 64)
+        w("Contrarian (LONG) phantom log: {} decisions".format(cs["decisions"]))
+        w("  Correct: {}   Wrong: {}   Neutral: {}".format(
+            cs["correct"], cs["wrong"], cs["neutral"]))
+        w("Net contrarian P&L: GBP {}".format(_signed(cs["net_pnl"])))
+        w("")
+
     # --- top phantom decisions ---------------------------------------------
     w("TOP PHANTOM DECISIONS (top 5 by |1hr move|)")
     w("-" * 64)

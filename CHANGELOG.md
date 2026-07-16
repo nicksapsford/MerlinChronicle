@@ -1,3 +1,9 @@
+## [1.2.3] - 2026-07-16
+### Added
+- Job 2: contrarian phantom log reporting for FTSETrader. data_reader.read_contrarian_summary()
+  reads logs/phantom_trades_contrarian.csv; the Archie report gains a "CONTRARIAN PHANTOM LOG
+  (FTSETrader)" section under Arthur performance: decisions / correct / wrong / neutral and
+  net contrarian P&L (1hr horizon). Shown only when the log has data.
 # Changelog
 
 All notable changes to Merlin's Chronicle are documented here.

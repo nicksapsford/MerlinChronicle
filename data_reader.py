@@ -282,6 +282,44 @@ def read_phantom_decisions(system_key, date_from=None, date_to=None):
 
 
 # ---------------------------------------------------------------------------
+# read_contrarian_summary  (Job 2 -- FTSETrader contrarian phantom log)
+# ---------------------------------------------------------------------------
+def read_contrarian_summary(system_key):
+    """Summary of a system's contrarian phantom log (phantom_trades_contrarian.csv)
+    on the 1hr verdict horizon. Returns dict: decisions, correct, wrong, neutral,
+    net_pnl (net contrarian pnl_1hr, in the market's price units). Empty when the
+    file is absent -- only FTSETrader writes it today. All times UTC."""
+    empty = {"decisions": 0, "correct": 0, "wrong": 0, "neutral": 0, "net_pnl": 0.0}
+    if system_key not in SYSTEMS:
+        return empty
+    path = _safe_path(system_key, "phantom_trades_contrarian.csv")
+    if not path or not os.path.exists(path):
+        return empty
+    decisions = correct = wrong = neutral = 0
+    net = 0.0
+    try:
+        with open(path, "r", newline="", encoding="utf-8-sig") as fh:
+            for row in csv.DictReader(fh):
+                if not row:
+                    continue
+                decisions += 1
+                v = _fstr(row, "verdict_1hr")
+                if v == "CORRECT":
+                    correct += 1
+                elif v == "WRONG":
+                    wrong += 1
+                elif v == "NEUTRAL":
+                    neutral += 1
+                p = _fnum(row, "pnl_1hr")
+                if p is not None:
+                    net += p
+    except Exception:
+        return empty
+    return {"decisions": decisions, "correct": correct, "wrong": wrong,
+            "neutral": neutral, "net_pnl": round(net, 2)}
+
+
+# ---------------------------------------------------------------------------
 # _level_for_confidence
 # ---------------------------------------------------------------------------
 def _level_for_confidence(conf):
